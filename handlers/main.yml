@@ -1,0 +1,14 @@
+---
+- name: restart vmauth service
+  systemd:
+    name: vmauth
+    state: restarted
+
+- name: reload vmauth service
+  systemd:
+    name: vmauth
+    state: reloaded
+
+- name: systemctl daemon-reload
+  systemd:
+    daemon_reload: true

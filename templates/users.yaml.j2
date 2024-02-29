@@ -1,0 +1,42 @@
+{{ ansible_managed | comment }}
+---
+users:
+{% for user in vmauth_users %}
+  - username: "{{ user.username }}"
+    password: "{{ user.password }}"
+{% if user.custom_url_map is not defined %}
+    url_map:
+      - src_paths:
+          - "/api/v2/alerts"
+          - "/api/v2/alerts/groups"
+          - "/api/v2/status"
+          - "/api/v2/receivers"
+          - "/api/v2/silences"
+          - "/api/v2/silence/[^/]+"
+        url_prefix:
+          - "{{ user.alertmanager | default(vmauth_alertmanager)  }}"
+        headers:
+          - "X-Scope-OrgID: {{ user.tenant }}"
+      - src_paths:
+          - "/api/v1/query"
+          - "/api/v1/query_range"
+          - "/api/v1/query_exemplars"
+          - "/api/v1/label/[^/]+/values"
+          - "/api/v1/labels"
+          - "/api/v1/series"
+          - "/api/v1/rules"
+          - "/api/v1/alerts"
+          - "/api/v1/status/buildinfo"
+          - "/api/v1/metadata"
+        url_prefix:
+          - "{{ user.vmselect | default(vmauth_vmselect) }}/select/{{ user.tenant }}/prometheus"
+      - src_paths:
+          - "/api/v1/write"
+          - "/api/v1/import/prometheus"
+        url_prefix:
+          - "{{ user.vminsert | default(vmauth_vminsert) }}/insert/{{ user.tenant }}/prometheus"
+{% else %}
+    url_map:
+      {{ user.custom_url_map | default() | to_nice_yaml | indent(6, false) }}
+{% endif %}
+{% endfor %}

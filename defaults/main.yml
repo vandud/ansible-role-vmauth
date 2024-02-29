@@ -1,0 +1,61 @@
+---
+vmauth_repo_url: "https://github.com/VictoriaMetrics/VictoriaMetrics"
+# yamllint disable-line rule:line-length
+vmauth_download_url: "{{ vmauth_repo_url }}/releases/download/{{ vmauth_version }}/vmutils-linux-amd64-{{ vmauth_version }}.tar.gz"
+vmauth_version: "v1.98.0"
+
+vmauth_system_user: "vmauth"
+vmauth_system_group: "vmauth"
+
+vmauth_bin_dir: /usr/local/bin
+vmauth_conf_dir: /etc/vmauth
+
+vmauth_alertmanager: https://alertmanager.demo.do.prometheus.io
+vmauth_vmselect: https://prometheus.demo.do.prometheus.io
+vmauth_vminsert: https://prometheus.demo.do.prometheus.io
+
+vmauth_conf:
+  auth_config: /etc/vmauth/users.yaml
+  httpListenAddr: 0.0.0.0:8427
+
+vmauth_users:
+  - tenant: "1"
+    username: default-user
+    password: password-1
+  - tenant: "2:1"
+    username: user-with-custom-backends
+    password: password-2
+    vmselect: http://vmselect.local:8480
+    vminsert: http://vmselect.local:8480
+    alertmanager: http://vmselect.local:8480
+  - tenant: "3"
+    username: user-without-default-url-map
+    password: password-3
+    custom_url_map:
+      - src_paths:
+          - "/api/v1/query"
+          - "/api/v1/query_range"
+          - "/api/v1/query_exemplars"
+          - "/api/v1/label/[^/]+/values"
+          - "/api/v1/labels"
+          - "/api/v1/series"
+          - "/api/v1/rules"
+          - "/api/v1/alerts"
+          - "/api/v1/status/buildinfo"
+          - "/api/v1/metadata"
+        url_prefix:
+          - https://prometheus.demo.do.prometheus.io
+      - src_paths:
+          - "/api/v1/write"
+          - "/api/v1/import/prometheus"
+        url_prefix:
+          - https://prometheus.demo.do.prometheus.io
+      - src_paths:
+          - "/api/v2/alerts"
+          - "/api/v2/alerts/groups"
+          - "/api/v2/status"
+          - "/api/v2/receivers"
+          - "/api/v2/silences"
+          - "/api/v2/silence/[^/]+"
+        url_prefix:
+          - https://alertmanager.demo.do.prometheus.io

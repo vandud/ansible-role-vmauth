@@ -1,0 +1,28 @@
+---
+galaxy_info:
+  role_name: vmauth
+  author: vandud
+  description: Role for installing vmauth
+  license: BSD
+  min_ansible_version: 2.9
+
+  platforms:
+    - name: EL
+      versions:
+        - all
+    - name: Fedora
+      versions:
+        - all
+    - name: Ubuntu
+      versions:
+        - all
+    - name: Debian
+      versions:
+        - all
+
+  galaxy_tags:
+    - monitoring
+    - victoriametrics
+    - vmauth
+
+dependencies: []

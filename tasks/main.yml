@@ -1,0 +1,90 @@
+---
+
+- name: Check if vmauth is installed
+  stat:
+    path: "{{ vmauth_bin_dir }}/vmauth-prod"
+  changed_when: false
+  check_mode: false
+  register: vmauth_is_installed
+
+- name: Check current vmauth version
+  command: "{{ vmauth_bin_dir }}/vmauth-prod -version"
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  register: vmauth_current_version
+  when: vmauth_is_installed.stat.exists == True
+
+- name: Create vmauth system group
+  group:
+    name: "{{ vmauth_system_group }}"
+    state: present
+    system: true
+  when: vmauth_system_group != "root"
+
+- name: Create vmauth system user
+  user:
+    name: "{{ vmauth_system_user }}"
+    groups: "{{ vmauth_system_group }}"
+    append: true
+    shell: /sbin/nologin
+    system: true
+    createhome: false
+  when: vmauth_system_user != "root"
+
+- name: Download vmauth from {{ vmauth_download_url }}
+  unarchive:
+    src: "{{ vmauth_download_url }}"
+    dest: "{{ vmauth_bin_dir }}"
+    extra_opts:
+      - 'vmauth-prod'
+    owner: "{{ vmauth_system_user }}"
+    group: "{{ vmauth_system_group }}"
+    remote_src: true
+  notify: restart vmauth service
+  when:
+    - not ansible_check_mode
+    - vmauth_is_installed.stat.exists == False or
+      vmauth_version not in vmauth_current_version.stdout
+
+- name: Create systemd unit file for vmauth
+  template:
+    src: vmauth.service.j2
+    dest: /etc/systemd/system/vmauth.service
+    owner: root
+    group: root
+    mode: 0644
+  notify:
+    - systemctl daemon-reload
+    - restart vmauth service
+
+- name: Add vmauth service to autoload (systemd enable)
+  systemd:
+    name: vmauth
+    enabled: true
+
+- name: Ensure conf dir is exist
+  file:
+    state: directory
+    path: "{{ vmauth_conf_dir }}"
+    owner: "{{ vmauth_system_user }}"
+    group: "{{ vmauth_system_group }}"
+    mode: 0755
+
+- name: Create vmauth.conf
+  template:
+    src: vmauth.conf.j2
+    dest: "{{ vmauth_conf_dir }}/vmauth.conf"
+    owner: "{{ vmauth_system_user }}"
+    group: "{{ vmauth_system_group }}"
+    mode: 0644
+  notify: restart vmauth service
+
+- name: Create users.yaml
+  template:
+    src: users.yaml.j2
+    dest: "{{ vmauth_conf_dir }}/users.yaml"
+    owner: "{{ vmauth_system_user }}"
+    group: "{{ vmauth_system_group }}"
+    mode: 0644
+  notify: reload vmauth service

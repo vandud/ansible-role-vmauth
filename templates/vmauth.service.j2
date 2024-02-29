@@ -1,0 +1,23 @@
+{{ ansible_managed | comment }}
+[Unit]
+Description=VictoriaMetrics VMAuth
+After=network.target
+
+[Service]
+Type=simple
+User={{ vmauth_system_user }}
+Group={{ vmauth_system_group }}
+StartLimitBurst=5
+StartLimitInterval=0
+Restart=always
+EnvironmentFile={{ vmauth_conf_dir }}/vmauth.conf
+ExecStart={{ vmauth_bin_dir }}/vmauth-prod -envflag.enable
+ExecReload=/bin/kill -s SIGHUP $MAINPID
+ExecStop=/bin/kill -s SIGTERM $MAINPID
+
+PrivateTmp=yes
+ProtectHome=yes
+NoNewPrivileges=yes
+
+[Install]
+WantedBy=multi-user.target
